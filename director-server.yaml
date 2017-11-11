@@ -59,7 +59,7 @@
         dest: /tmp/
         mode: 755
       
-    - name: Setup DB
+    - name: copy DB
       copy:
         src: mariadb.sh
         dest: /tmp/mariadb.sh
