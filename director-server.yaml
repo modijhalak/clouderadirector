@@ -53,6 +53,12 @@
     - name: Install MariaDB/Mysql
       shell: yum install -y mariadb
       
+    - name: copy database.txt
+      copy:
+        src: database.txt
+        dest: /tmp/
+        mode: 755
+      
     - name: Setup DB
       copy:
         src: mariadb.sh
