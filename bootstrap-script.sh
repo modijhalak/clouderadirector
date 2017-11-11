@@ -2,14 +2,12 @@
 # Cloudera bootstrap script 
 sudo yum remove --assumeyes *openjdk*
 sudo yum update -y
-#aws s3 cp s3://dbs-ngdp/jdk-8u141-linux-x64.rpm .
 #sudo yum localinstall jdk-8u141-linux-x64.rpm -y
 sudo yum install https://s3-us-west-2.amazonaws.com/jmodi-kogentix/jdk-8u141-linux-x64.rpm -y
 export JAVA_HOME=/usr/java/jdk1.8.0_141
 sudo sh -c "echo 'export JAVA_HOME=/usr/java/jdk1.8.0_141' >> /etc/profile.d/jdk_home.sh"
 echo "Java 1.8 Installed"
 echo "Setup JDBC"
-#aws s3 cp s3://dbs-ngdp/mysql-connector-java-5.1.44.tar.gz .
 #tar xvzf mysql-connector-java-5.1.44.tar.gz
 #mkdir -p /usr/share/java
 #sudo cp mysql-connector-java-5.1.44/mysql-connector-java-5.1.44-bin.jar /usr/share/java/mysql-connector-java.jar
