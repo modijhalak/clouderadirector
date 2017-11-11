@@ -33,6 +33,12 @@
       add_host:
         hostname: "{{ ec2_host_instance_ip }}"
         groupname: director1
+    
+    - name: Wait for instance to comeup
+      wait_for:
+        host: "{{ ec2_host_instance.private_ip }}"
+        state: started
+        port: 22
   
 - name: Cloudera Director pre configurations setup
   hosts: director1
@@ -41,39 +47,66 @@
   become_method: sudo
   gather_facts: no 
   tasks:
-    - name: Download Oracle JDK 
-      shell: wget
-      
     - name: Install Oracle JDK
-      shell: yum localinstall -y --nogpgcheck /tmp/oraclejdk.rpm
+      shell: yum localinstall -y https://s3-ap-southeast-1.amazonaws.com/dbs-amp-test/jdk-8u141-linux-x64.rpm
     
     - name: Install MariaDB/Mysql
       shell: yum install -y mariadb
-    
-    - name: Download Cloudera Director Repo
-      shell: http://archive.cloudera.com/director/redhat/7/x86_64/director/cloudera-director.repo
-    
-    - name : Install cloudera  director server
-      shell: yum updates -y
-      shell: yum install cloudera-director-server -y
-    
-    - name : Install cloudera director client      
-      shell: yum install cloudera-director-client -y
       
-    - name : start director server
-      shell: sh ../bin/util/start-director.sh
+    - name: Setup DB
+      copy:
+        src: mariadb.sh
+        dest: /tmp/mariadb.sh
+        mode: 755
     
+    - name: run script
+      shell: sh /tmp/mariadb.sh
+      
+    - name: Download Director Client
+      command: sudo wget http://archive.cloudera.com/director/redhat/7/x86_64/director/2.5.0/RPMS/x86_64/cloudera-director-client-2.5.0-1.director250.p0.21.el7.x86_64.rpm
+    
+    - name: Download DirectorPlugins
+      command: sudo wget http://archive.cloudera.com/director/redhat/7/x86_64/director/2.5.0/RPMS/x86_64/cloudera-director-plugins-2.5.0-1.director250.p0.21.el7.x86_64.rpm
+    
+    - name: Download Director Server 
+      command: sudo wget http://archive.cloudera.com/director/redhat/7/x86_64/director/2.5.0/RPMS/x86_64/cloudera-director-server-2.5.0-1.director250.p0.21.el7.x86_64.rpm
+   
+    - name: Install Director Plugins
+      command: sudo yum localinstall cloudera-director-plugins-2.5.0-1.director250.p0.21.el7.x86_64.rpm -y 
+   
+    - name: Install Director Server 
+      command: sudo yum localinstall cloudera-director-server-2.5.0-1.director250.p0.21.el7.x86_64.rpm -y
+    
+    - name: Install Director Server Clinet 
+      command: sudo yum localinstall cloudera-director-client-2.5.0-1.director250.p0.21.el7.x86_64.rpm -y 
+      
+    - name: Start Director Server
+      command: sudo systemctl start cloudera-director-server
+    
+    - name : Enable Director Service 
+      command: sudo systemctl enable cloudera-director-server
+    
+    - debug:
+        msg: " File name is {{ conf_name }} "
+    
+    - name: Copy Conf File      
+      copy: src=/home/ec2-user/cluster/{{conf_name}}.j2 dest=/tmp/{{conf_name}}
+  
+    - name: Copy Kogentix Key pair 
+      copy: 
+        src: "/home/ec2-user/cluster/Cluster.pem"
+        dest: "/tmp/"
+        mode: 600
+   
     - name : Copy bootstrap file
       copy : 
         src: "bootstrap-scripts.sh" 
         dest: "/tmp/" 
         mode: "0775"
-  - name: deploy_alluxio-env.sh
-      template: 
-        src: spark-hbase.conf.j2
-        dest: "/tmp/spark-hbase.conf.j2"
-  
-  - name : bootstrap CDH5.12 cluster
-      shell: rm -rf ../template/.*.conf.h2.db
-      shell: cloudera-director bootstrap ../template/#[[TEMPLATE]].conf
-        
+      
+    - name: Run Conf file for Cluster
+      command: sudo cloudera-director bootstrap /tmp/{{conf_name}}
+      
+    - name: Cluster Status
+      command: sudo cloudera-director status /tmp/{{conf_name}}
+      
