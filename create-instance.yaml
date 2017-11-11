@@ -1,0 +1,47 @@
+---
+- name: Create a server instance
+  hosts: localhost
+  gather_facts: no
+  vars:
+   proxy_env:
+      NO_PROXY: 169.254.169.254
+      http_proxy: http://vamshavardhan:Welcome1234@10.5.127.23:8080
+      https_proxy: http://vamshavardhan:Welcome1234@10.5.127.23:8080
+  tasks:
+    - name: Launch instance
+      ec2:
+         key_name: "{{ lookup('ini', 'key_name section=director file=director1.ini') }}"
+         group_id: "{{ lookup('ini', 'security_group section=director file=director1.ini') }}"
+         instance_type: "{{ lookup('ini', 'instance_type section=director  file=director1.ini') }}"
+         image: "{{ lookup('ini', 'image section=director file=director1.ini') }}"
+         wait: true
+         wait_timeout: 600
+         exact_count: 1
+         region: "{{ lookup('ini', 'region  section=director file=director1.ini') }}"
+         vpc_subnet_id: "{{ lookup('ini', 'vpc_subnet_id  section=director file=director1.ini') }}"
+         assign_public_ip: false
+         instance_profile_name: "{{ lookup('ini', 'instance_profile_name  section=director file=director1.ini') }}"
+         count_tag:
+           Name: "Custom-repo"
+         volumes:
+           - device_name: /dev/sdb
+             volume_type: gp2
+             volume_size: 80
+             delete_on_termination: "true"
+         instance_tags:
+           Name: "Create-Repo"
+           role: "DAH_NGDP_Custom_AMI"
+           App-code: "ADA"
+      register: ec2
+    - name: Set default on EC2 Instance
+      set_fact:
+        ec2_host_instance: "{{ ec2.tagged_instances[0] }}"
+    - name: Set default facts on EC2 Instance
+      set_fact:
+        ec2_host_instance_ip: "{{ ec2_host_instance.private_ip }}"
+        ec2_host_instance_id: "{{ ec2_host_instance.id }}"
+    - name: Add new instance to host group
+      environment: "{{proxy_env}}"
+      add_host:
+        hostname: "{{ ec2_host_instance_ip }}"
+        groupname: launched1
