@@ -34,3 +34,21 @@
         hostname: "{{ ec2_host_instance_ip }}"
         groupname: director1
   
+- name: Alluxio pre configurations
+  hosts: director1
+  remote_user: ec2_user
+  become: yes
+  become_method: sudo
+  gather_facts: no 
+  tasks:
+  
+    - name : Copy bootstrap file
+      copy : 
+        src: "bootstrap-scripts.sh" 
+        dest: "/tmp/" 
+        mode: "0775"
+  - name: deploy_alluxio-env.sh
+      template: 
+        src: spark-hbase.conf.j2
+        dest: "/tmp/spark-hbase.conf.j2"
+        
