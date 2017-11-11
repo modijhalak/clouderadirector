@@ -1,0 +1,7 @@
+clusteradmin
+scm
+amon
+rman
+nav
+navms
+hive
