@@ -36,7 +36,7 @@
   
 - name: Cloudera Director pre configurations setup
   hosts: director1
-  remote_user: ec2_user
+  remote_user: "{{ lookup('ini', 'ec2_remote_user  section=director file=cloudera.ini') }}"
   become: yes
   become_method: sudo
   gather_facts: no 
