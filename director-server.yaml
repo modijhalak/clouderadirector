@@ -3,7 +3,7 @@
   hosts: localhost
   gather_facts: no
   tasks:
-    - name: Launch instance
+    - name: Launch instance for cloudera director
       ec2:
          key_name: "{{ lookup('ini', 'key_name section=director file=cloudera.ini') }}"
          group_id: "{{ lookup('ini', 'security_group section=director file=cloudera.ini') }}"
@@ -34,14 +34,35 @@
         hostname: "{{ ec2_host_instance_ip }}"
         groupname: director1
   
-- name: Alluxio pre configurations
+- name: Cloudera Director pre configurations setup
   hosts: director1
   remote_user: ec2_user
   become: yes
   become_method: sudo
   gather_facts: no 
   tasks:
-  
+    - name: Download Oracle JDK 
+      shell: wget
+      
+    - name: Install Oracle JDK
+      shell: yum localinstall -y --nogpgcheck /tmp/oraclejdk.rpm
+    
+    - name: Install MariaDB/Mysql
+      shell: yum install -y mariadb
+    
+    - name: Download Cloudera Director Repo
+      shell: http://archive.cloudera.com/director/redhat/7/x86_64/director/cloudera-director.repo
+    
+    - name : Install cloudera  director server
+      shell: yum updates -y
+      shell: yum install cloudera-director-server -y
+    
+    - name : Install cloudera director client      
+      shell: yum install cloudera-director-client -y
+      
+    - name : start director server
+      shell: sh ../bin/util/start-director.sh
+    
     - name : Copy bootstrap file
       copy : 
         src: "bootstrap-scripts.sh" 
@@ -51,4 +72,8 @@
       template: 
         src: spark-hbase.conf.j2
         dest: "/tmp/spark-hbase.conf.j2"
+  
+  - name : bootstrap CDH5.12 cluster
+      shell: rm -rf ../template/.*.conf.h2.db
+      shell: cloudera-director bootstrap ../template/#[[TEMPLATE]].conf
         
